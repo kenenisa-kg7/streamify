@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import HeroBanner from "@/components/HeroBanner";
-import MovieCard from "@/components/Moviecard";
+import MovieCard from "@/components/MovieCard";
 import { Movie } from "@/types";
 import {
   getTrendingMovies,

@@ -2,15 +2,16 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { Movie } from "@/types";
 import { IMAGE_URL } from "@/lib/tmdb";
 
 interface MovieCardProps {
   movie: Movie;
-  onClick?: (movie: Movie) => void;
 }
 
-export default function MovieCard({ movie, onClick }: MovieCardProps) {
+export default function MovieCard({ movie }: MovieCardProps) {
+  const router = useRouter();
   const [hovered, setHovered] = useState(false);
   const [imgError, setImgError] = useState(false);
 
@@ -22,7 +23,7 @@ export default function MovieCard({ movie, onClick }: MovieCardProps) {
 
   return (
     <div
-      onClick={() => onClick?.(movie)}
+      onClick={() => router.push(`/watch/${movie.id}`)}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
@@ -37,7 +38,6 @@ export default function MovieCard({ movie, onClick }: MovieCardProps) {
         width: "160px",
       }}
     >
-      {/* Poster image */}
       <div style={{ position: "relative", width: "160px", height: "240px" }}>
         <Image
           src={posterUrl}
@@ -49,7 +49,6 @@ export default function MovieCard({ movie, onClick }: MovieCardProps) {
         />
       </div>
 
-      {/* Hover overlay */}
       {hovered && (
         <div style={{
           position: "absolute", inset: 0,
@@ -73,7 +72,6 @@ export default function MovieCard({ movie, onClick }: MovieCardProps) {
               {movie.release_date?.slice(0, 4)}
             </span>
           </div>
-          {/* Play button */}
           <div style={{
             marginTop: "8px", display: "flex",
             alignItems: "center", justifyContent: "center",
