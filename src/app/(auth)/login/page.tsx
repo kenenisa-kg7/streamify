@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { loginUser, saveAuth } from "@/lib/auth";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -10,23 +12,29 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
+  e.preventDefault();
+  setError("");
 
-    if (!email || !password) {
-      setError("Please fill in all fields.");
-      return;
-    }
+  if (!email || !password) {
+    setError("Please fill in all fields.");
+    return;
+  }
 
-    setLoading(true);
-    // Backend connection comes on Day 9
-    setTimeout(() => {
-      setLoading(false);
-      alert("Login coming soon — backend on Day 9!");
-    }, 1000);
-  };
+  setLoading(true);
+
+  try {
+    const { token, user } = await loginUser(email, password);
+    saveAuth(token, user);
+    router.push("/browse");
+  } catch (err) {
+    setError(err instanceof Error ? err.message : "Something went wrong.");
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <main style={{

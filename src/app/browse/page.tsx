@@ -11,6 +11,8 @@ import {
   getTopRatedMovies,
   getUpcomingMovies,
 } from "@/lib/tmdb";
+import { useRouter } from "next/navigation";
+import { getToken, getStoredUser, logout } from "@/lib/auth";
 
 interface MovieRow {
   title: string;
@@ -22,6 +24,8 @@ export default function BrowsePage() {
   const [rows, setRows] = useState<MovieRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const router = useRouter();
+const [user, setUser] = useState<{ name: string; email: string } | null>(null);
 
   useEffect(() => {
     const fetchMovies = async () => {
@@ -33,6 +37,7 @@ export default function BrowsePage() {
           getTopRatedMovies(),
           getUpcomingMovies(),
         ]);
+        
 
         const trendingMovies: Movie[] = trending.data.results;
         const popularMovies: Movie[] = popular.data.results;
@@ -61,6 +66,14 @@ export default function BrowsePage() {
 
     fetchMovies();
   }, []);
+  useEffect(() => {
+  const token = getToken();
+  if (!token) {
+    router.push("/login");
+    return;
+  }
+  setUser(getStoredUser());
+}, [router]);
 
   if (loading) {
     return (
@@ -106,10 +119,30 @@ export default function BrowsePage() {
             ))}
           </div>
         </div>
-        <div style={{
-          width: "32px", height: "32px", borderRadius: "4px",
-          background: "linear-gradient(135deg, #e50914, #a78bfa)"
-        }} />
+     <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+  {user && (
+    <span style={{ color: "#e5e5e5", fontSize: "14px" }}>
+      {user.name}
+    </span>
+  )}
+  <button
+    onClick={() => {
+      logout();
+      router.push("/login");
+    }}
+    style={{
+      background: "transparent",
+      border: "1px solid #444",
+      borderRadius: "4px",
+      color: "#e5e5e5",
+      padding: "6px 14px",
+      fontSize: "13px",
+      cursor: "pointer",
+    }}
+  >
+    Logout
+  </button>
+</div>
       </nav>
 
       {/* Hero Banner */}
