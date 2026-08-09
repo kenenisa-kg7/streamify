@@ -28,7 +28,7 @@ export default function LoginPage() {
   try {
     const { token, user } = await loginUser(email, password);
     saveAuth(token, user);
-    router.push("/browse");
+    router.push("/profiles");
   } catch (err) {
     setError(err instanceof Error ? err.message : "Something went wrong.");
   } finally {

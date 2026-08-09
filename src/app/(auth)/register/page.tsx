@@ -40,7 +40,7 @@ const handleSubmit = async (e: React.FormEvent) => {
   try {
     const { token, user } = await registerUser(name, email, password);
     saveAuth(token, user);
-    router.push("/browse");
+    router.push("/profiles");
   } catch (err) {
     setError(err instanceof Error ? err.message : "Something went wrong.");
   } finally {

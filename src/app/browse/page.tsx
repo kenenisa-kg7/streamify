@@ -13,6 +13,7 @@ import {
 } from "@/lib/tmdb";
 import { useRouter } from "next/navigation";
 import { getToken, getStoredUser, logout } from "@/lib/auth";
+import { getActiveProfile } from "@/lib/profiles";
 
 interface MovieRow {
   title: string;
@@ -70,6 +71,11 @@ const [user, setUser] = useState<{ name: string; email: string } | null>(null);
   const token = getToken();
   if (!token) {
     router.push("/login");
+    return;
+  }
+    const activeProfile = getActiveProfile();
+  if (!activeProfile) {
+    router.push("/profiles");
     return;
   }
   setUser(getStoredUser());
