@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import HeroBanner from "@/components/HeroBanner";
 import MovieCard from "@/components/MovieCard";
 import { Movie } from "@/types";
@@ -11,9 +12,9 @@ import {
   getTopRatedMovies,
   getUpcomingMovies,
 } from "@/lib/tmdb";
-import { useRouter } from "next/navigation";
 import { getToken, getStoredUser, logout } from "@/lib/auth";
 import { getActiveProfile } from "@/lib/profiles";
+import { fetchWatchlist, addToWatchlist, removeFromWatchlist } from "@/lib/watchlist";
 
 interface MovieRow {
   title: string;
@@ -21,35 +22,34 @@ interface MovieRow {
 }
 
 export default function BrowsePage() {
+  const router = useRouter();
+
   const [featuredMovie, setFeaturedMovie] = useState<Movie | null>(null);
   const [rows, setRows] = useState<MovieRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const router = useRouter();
-const [user, setUser] = useState<{ name: string; email: string } | null>(null);
+  const [user, setUser] = useState<{ name: string; email: string } | null>(null);
+  const [watchlistIds, setWatchlistIds] = useState<Set<number>>(new Set());
 
+  // Fetch TMDB movie data for the browse rows
   useEffect(() => {
     const fetchMovies = async () => {
       try {
-        // Fetch all categories at the same time
         const [trending, popular, topRated, upcoming] = await Promise.all([
           getTrendingMovies(),
           getPopularMovies(),
           getTopRatedMovies(),
           getUpcomingMovies(),
         ]);
-        
 
         const trendingMovies: Movie[] = trending.data.results;
         const popularMovies: Movie[] = popular.data.results;
         const topRatedMovies: Movie[] = topRated.data.results;
         const upcomingMovies: Movie[] = upcoming.data.results;
 
-        // Pick a random trending movie for the hero banner
         const randomIndex = Math.floor(Math.random() * trendingMovies.length);
         setFeaturedMovie(trendingMovies[randomIndex]);
 
-        // Build the rows
         setRows([
           { title: "Trending Now", movies: trendingMovies },
           { title: "Popular on Streamify", movies: popularMovies },
@@ -67,19 +67,53 @@ const [user, setUser] = useState<{ name: string; email: string } | null>(null);
 
     fetchMovies();
   }, []);
+
+  // Auth guard + active profile check + initial watchlist load
   useEffect(() => {
-  const token = getToken();
-  if (!token) {
-    router.push("/login");
-    return;
-  }
+    const token = getToken();
+    if (!token) {
+      router.push("/login");
+      return;
+    }
+
     const activeProfile = getActiveProfile();
-  if (!activeProfile) {
-    router.push("/profiles");
-    return;
+    if (!activeProfile) {
+      router.push("/profiles");
+      return;
+    }
+
+    setUser(getStoredUser());
+
+    fetchWatchlist(activeProfile.id)
+      .then((items) => {
+        const ids = new Set(items.map((item) => item.movieId));
+        setWatchlistIds(ids);
+      })
+      .catch((err) => console.error("Failed to load watchlist:", err));
+  }, [router]);
+
+  async function handleToggleWatchlist(movieId: number) {
+    const activeProfile = getActiveProfile();
+    if (!activeProfile) return;
+
+    const isSaved = watchlistIds.has(movieId);
+
+    try {
+      if (isSaved) {
+        await removeFromWatchlist(movieId, activeProfile.id);
+        setWatchlistIds((prev) => {
+          const next = new Set(prev);
+          next.delete(movieId);
+          return next;
+        });
+      } else {
+        await addToWatchlist(movieId, activeProfile.id);
+        setWatchlistIds((prev) => new Set(prev).add(movieId));
+      }
+    } catch (err) {
+      console.error("Failed to toggle watchlist:", err);
+    }
   }
-  setUser(getStoredUser());
-}, [router]);
 
   if (loading) {
     return (
@@ -118,37 +152,40 @@ const [user, setUser] = useState<{ name: string; email: string } | null>(null);
             <h1 style={{ color: "#e50914", fontSize: "24px", fontWeight: 900 }}>STREAMIFY</h1>
           </Link>
           <div style={{ display: "flex", gap: "20px" }}>
-            {["Home", "TV Shows", "Movies", "My List"].map((item) => (
-              <span key={item} style={{ color: "#e5e5e5", fontSize: "14px", cursor: "pointer" }}>
-                {item}
-              </span>
-            ))}
+           <Link href="/browse" style={{ color: "#e5e5e5", fontSize: "14px", textDecoration: "none" }}>
+  Home
+</Link>
+<span style={{ color: "#e5e5e5", fontSize: "14px", cursor: "pointer" }}>TV Shows</span>
+<span style={{ color: "#e5e5e5", fontSize: "14px", cursor: "pointer" }}>Movies</span>
+<Link href="/mylist" style={{ color: "#e5e5e5", fontSize: "14px", textDecoration: "none" }}>
+  My List
+</Link>
           </div>
         </div>
-     <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-  {user && (
-    <span style={{ color: "#e5e5e5", fontSize: "14px" }}>
-      {user.name}
-    </span>
-  )}
-  <button
-    onClick={() => {
-      logout();
-      router.push("/login");
-    }}
-    style={{
-      background: "transparent",
-      border: "1px solid #444",
-      borderRadius: "4px",
-      color: "#e5e5e5",
-      padding: "6px 14px",
-      fontSize: "13px",
-      cursor: "pointer",
-    }}
-  >
-    Logout
-  </button>
-</div>
+        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+          {user && (
+            <span style={{ color: "#e5e5e5", fontSize: "14px" }}>
+              {user.name}
+            </span>
+          )}
+          <button
+            onClick={() => {
+              logout();
+              router.push("/login");
+            }}
+            style={{
+              background: "transparent",
+              border: "1px solid #444",
+              borderRadius: "4px",
+              color: "#e5e5e5",
+              padding: "6px 14px",
+              fontSize: "13px",
+              cursor: "pointer",
+            }}
+          >
+            Logout
+          </button>
+        </div>
       </nav>
 
       {/* Hero Banner */}
@@ -169,7 +206,12 @@ const [user, setUser] = useState<{ name: string; email: string } | null>(null);
               overflowX: "auto", paddingBottom: "12px"
             }}>
               {row.movies.map((movie) => (
-                <MovieCard key={movie.id} movie={movie} />
+                <MovieCard
+                  key={movie.id}
+                  movie={movie}
+                  isInWatchlist={watchlistIds.has(movie.id)}
+                  onToggleWatchlist={handleToggleWatchlist}
+                />
               ))}
             </div>
           </div>

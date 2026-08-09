@@ -8,9 +8,11 @@ import { IMAGE_URL } from "@/lib/tmdb";
 
 interface MovieCardProps {
   movie: Movie;
+  isInWatchlist?: boolean;
+  onToggleWatchlist?: (movieId: number) => void;
 }
 
-export default function MovieCard({ movie }: MovieCardProps) {
+export default function MovieCard({ movie, isInWatchlist = false, onToggleWatchlist }: MovieCardProps) {
   const router = useRouter();
   const [hovered, setHovered] = useState(false);
   const [imgError, setImgError] = useState(false);
@@ -48,6 +50,36 @@ export default function MovieCard({ movie }: MovieCardProps) {
           sizes="160px"
         />
       </div>
+
+      {/* Watchlist toggle — always visible so users can find it without hovering, but styled subtly */}
+      {onToggleWatchlist && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation(); // prevents the card's own onClick (navigate to /watch) from firing
+            onToggleWatchlist(movie.id);
+          }}
+          style={{
+            position: "absolute",
+            top: "8px",
+            right: "8px",
+            width: "28px",
+            height: "28px",
+            borderRadius: "50%",
+            background: isInWatchlist ? "#e50914" : "rgba(0,0,0,0.6)",
+            border: "1px solid rgba(255,255,255,0.4)",
+            color: "#fff",
+            fontSize: "16px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            cursor: "pointer",
+            zIndex: 2,
+          }}
+          title={isInWatchlist ? "Remove from My List" : "Add to My List"}
+        >
+          {isInWatchlist ? "✓" : "+"}
+        </button>
+      )}
 
       {hovered && (
         <div style={{
