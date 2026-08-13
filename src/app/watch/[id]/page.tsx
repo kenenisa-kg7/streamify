@@ -12,6 +12,8 @@ import {
   getSimilarMovies,
   IMAGE_URL,
 } from "@/lib/tmdb";
+import { getActiveProfile } from "@/lib/profiles";
+import { updateWatchProgress } from "@/lib/watchHistory";
 
 export default function WatchPage() {
   const params = useParams();
@@ -24,6 +26,7 @@ export default function WatchPage() {
   const [similar, setSimilar] = useState<Movie[]>([]);
   const [loading, setLoading] = useState(true);
   const [showTrailer, setShowTrailer] = useState(false);
+  const [markedWatched, setMarkedWatched] = useState(false);
 
   useEffect(() => {
     if (!movieId) return;
@@ -38,6 +41,14 @@ export default function WatchPage() {
         ]);
 
         setMovie(details.data);
+
+        // Log that this profile started watching — fire-and-forget, don't block the page on it
+        const activeProfile = getActiveProfile();
+        if (activeProfile) {
+          updateWatchProgress(movieId, activeProfile.id, 30).catch((err) =>
+            console.error("Failed to log watch progress:", err)
+          );
+        }
 
         // Find the official trailer (YouTube type)
         const officialTrailer = videos.data.results.find(
@@ -60,6 +71,18 @@ export default function WatchPage() {
 
     fetchMovieData();
   }, [movieId]);
+
+  async function handleMarkAsWatched() {
+    const activeProfile = getActiveProfile();
+    if (!activeProfile) return;
+
+    try {
+      await updateWatchProgress(movieId, activeProfile.id, 100);
+      setMarkedWatched(true);
+    } catch (err) {
+      console.error("Failed to mark as watched:", err);
+    }
+  }
 
   if (loading) {
     return (
@@ -202,6 +225,20 @@ export default function WatchPage() {
               }}
             >
               ← Back
+            </button>
+
+            <button
+              onClick={handleMarkAsWatched}
+              disabled={markedWatched}
+              style={{
+                padding: "12px 28px",
+                background: markedWatched ? "#2d5a2d" : "rgba(109,109,110,0.7)",
+                color: "#ffffff", border: "none", borderRadius: "4px",
+                fontSize: "16px", fontWeight: 700,
+                cursor: markedWatched ? "default" : "pointer"
+              }}
+            >
+              {markedWatched ? "✓ Watched" : "Mark as Watched"}
             </button>
           </div>
         </div>

@@ -11,11 +11,13 @@ import {
   getPopularMovies,
   getTopRatedMovies,
   getUpcomingMovies,
+  getMovieDetails,
 } from "@/lib/tmdb";
 import { getToken, getStoredUser, logout } from "@/lib/auth";
 import { getActiveProfile } from "@/lib/profiles";
 import { fetchWatchlist, addToWatchlist, removeFromWatchlist } from "@/lib/watchlist";
 import { fetchFavorites, addToFavorites, removeFromFavorites } from "@/lib/favorites";
+import { fetchWatchHistory } from "@/lib/watchHistory";
 
 interface MovieRow {
   title: string;
@@ -32,6 +34,7 @@ export default function BrowsePage() {
   const [user, setUser] = useState<{ name: string; email: string } | null>(null);
   const [watchlistIds, setWatchlistIds] = useState<Set<number>>(new Set());
   const [favoriteIds, setFavoriteIds] = useState<Set<number>>(new Set());
+  const [continueWatching, setContinueWatching] = useState<{ movie: Movie; progress: number }[]>([]);
 
   // Fetch TMDB movie data for the browse rows
   useEffect(() => {
@@ -70,7 +73,7 @@ export default function BrowsePage() {
     fetchMovies();
   }, []);
 
-  // Auth guard + active profile check + initial watchlist load
+  // Auth guard + active profile check + initial watchlist/favorites/history load
   useEffect(() => {
     const token = getToken();
     if (!token) {
@@ -92,13 +95,30 @@ export default function BrowsePage() {
         setWatchlistIds(ids);
       })
       .catch((err) => console.error("Failed to load watchlist:", err));
-  fetchFavorites(activeProfile.id)
-  .then((items) => {
-    const ids = new Set(items.map((item) => item.movieId));
-    setFavoriteIds(ids);
-  })
-  .catch((err) => console.error("Failed to load favorites:", err));
-    }, [router]);
+
+    fetchFavorites(activeProfile.id)
+      .then((items) => {
+        const ids = new Set(items.map((item) => item.movieId));
+        setFavoriteIds(ids);
+      })
+      .catch((err) => console.error("Failed to load favorites:", err));
+
+    fetchWatchHistory(activeProfile.id)
+      .then(async (items) => {
+        // Only show things that aren't fully finished
+        const inProgress = items.filter((item) => item.progress < 100);
+
+        const withMovies = await Promise.all(
+          inProgress.map(async (item) => {
+            const res = await getMovieDetails(item.movieId);
+            return { movie: res.data as Movie, progress: item.progress };
+          })
+        );
+
+        setContinueWatching(withMovies);
+      })
+      .catch((err) => console.error("Failed to load watch history:", err));
+  }, [router]);
 
   async function handleToggleWatchlist(movieId: number) {
     const activeProfile = getActiveProfile();
@@ -122,28 +142,29 @@ export default function BrowsePage() {
       console.error("Failed to toggle watchlist:", err);
     }
   }
+
   async function handleToggleFavorite(movieId: number) {
-  const activeProfile = getActiveProfile();
-  if (!activeProfile) return;
+    const activeProfile = getActiveProfile();
+    if (!activeProfile) return;
 
-  const isSaved = favoriteIds.has(movieId);
+    const isSaved = favoriteIds.has(movieId);
 
-  try {
-    if (isSaved) {
-      await removeFromFavorites(movieId, activeProfile.id);
-      setFavoriteIds((prev) => {
-        const next = new Set(prev);
-        next.delete(movieId);
-        return next;
-      });
-    } else {
-      await addToFavorites(movieId, activeProfile.id);
-      setFavoriteIds((prev) => new Set(prev).add(movieId));
+    try {
+      if (isSaved) {
+        await removeFromFavorites(movieId, activeProfile.id);
+        setFavoriteIds((prev) => {
+          const next = new Set(prev);
+          next.delete(movieId);
+          return next;
+        });
+      } else {
+        await addToFavorites(movieId, activeProfile.id);
+        setFavoriteIds((prev) => new Set(prev).add(movieId));
+      }
+    } catch (err) {
+      console.error("Failed to toggle favorite:", err);
     }
-  } catch (err) {
-    console.error("Failed to toggle favorite:", err);
   }
-}
 
   if (loading) {
     return (
@@ -182,17 +203,17 @@ export default function BrowsePage() {
             <h1 style={{ color: "#e50914", fontSize: "24px", fontWeight: 900 }}>STREAMIFY</h1>
           </Link>
           <div style={{ display: "flex", gap: "20px" }}>
-           <Link href="/browse" style={{ color: "#e5e5e5", fontSize: "14px", textDecoration: "none" }}>
-  Home
-</Link>
-<span style={{ color: "#e5e5e5", fontSize: "14px", cursor: "pointer" }}>TV Shows</span>
-<span style={{ color: "#e5e5e5", fontSize: "14px", cursor: "pointer" }}>Movies</span>
-<Link href="/mylist" style={{ color: "#e5e5e5", fontSize: "14px", textDecoration: "none" }}>
-  My List
-</Link>
-<Link href="/favorites" style={{ color: "#e5e5e5", fontSize: "14px", textDecoration: "none" }}>
-  Favorites
-</Link>
+            <Link href="/browse" style={{ color: "#e5e5e5", fontSize: "14px", textDecoration: "none" }}>
+              Home
+            </Link>
+            <span style={{ color: "#e5e5e5", fontSize: "14px", cursor: "pointer" }}>TV Shows</span>
+            <span style={{ color: "#e5e5e5", fontSize: "14px", cursor: "pointer" }}>Movies</span>
+            <Link href="/mylist" style={{ color: "#e5e5e5", fontSize: "14px", textDecoration: "none" }}>
+              My List
+            </Link>
+            <Link href="/favorites" style={{ color: "#e5e5e5", fontSize: "14px", textDecoration: "none" }}>
+              Favorites
+            </Link>
           </div>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
@@ -226,6 +247,35 @@ export default function BrowsePage() {
 
       {/* Movie rows */}
       <div style={{ padding: "0 48px 64px", marginTop: "-80px", position: "relative", zIndex: 5 }}>
+
+        {/* Continue Watching — only shows if there's actually something in progress */}
+       {continueWatching.length > 0 && (
+  <div style={{ marginBottom: "40px", marginTop: "60px" }}>
+            <h2 style={{
+              color: "#ffffff", fontSize: "20px",
+              fontWeight: 700, marginBottom: "12px"
+            }}>
+              Continue Watching
+            </h2>
+            <div style={{
+              display: "flex", gap: "8px",
+              overflowX: "auto", paddingBottom: "12px"
+            }}>
+              {continueWatching.map(({ movie, progress }) => (
+                <MovieCard
+                  key={movie.id}
+                  movie={movie}
+                  progress={progress}
+                  isInWatchlist={watchlistIds.has(movie.id)}
+                  onToggleWatchlist={handleToggleWatchlist}
+                  isFavorite={favoriteIds.has(movie.id)}
+                  onToggleFavorite={handleToggleFavorite}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+
         {rows.map((row) => (
           <div key={row.title} style={{ marginBottom: "40px" }}>
             <h2 style={{
@@ -239,14 +289,14 @@ export default function BrowsePage() {
               overflowX: "auto", paddingBottom: "12px"
             }}>
               {row.movies.map((movie) => (
-             <MovieCard
-  key={movie.id}
-  movie={movie}
-  isInWatchlist={watchlistIds.has(movie.id)}
-  onToggleWatchlist={handleToggleWatchlist}
-  isFavorite={favoriteIds.has(movie.id)}
-  onToggleFavorite={handleToggleFavorite}
-/>
+                <MovieCard
+                  key={movie.id}
+                  movie={movie}
+                  isInWatchlist={watchlistIds.has(movie.id)}
+                  onToggleWatchlist={handleToggleWatchlist}
+                  isFavorite={favoriteIds.has(movie.id)}
+                  onToggleFavorite={handleToggleFavorite}
+                />
               ))}
             </div>
           </div>

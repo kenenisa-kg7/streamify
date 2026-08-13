@@ -13,13 +13,21 @@ interface MovieCardProps {
   isFavorite?: boolean;
   onToggleFavorite?: (movieId: number) => void;
 }
-
+interface MovieCardProps {
+  movie: Movie;
+  isInWatchlist?: boolean;
+  onToggleWatchlist?: (movieId: number) => void;
+  isFavorite?: boolean;
+  onToggleFavorite?: (movieId: number) => void;
+  progress?: number;
+}
 export default function MovieCard({
   movie,
   isInWatchlist = false,
   onToggleWatchlist,
   isFavorite = false,
   onToggleFavorite,
+  progress,
 }: MovieCardProps) {
   const router = useRouter();
   const [hovered, setHovered] = useState(false);
@@ -57,6 +65,17 @@ export default function MovieCard({
           onError={() => setImgError(true)}
           sizes="160px"
         />
+        {progress !== undefined && progress > 0 && (
+  <div style={{
+    position: "absolute", bottom: 0, left: 0, right: 0,
+    height: "4px", background: "rgba(255,255,255,0.3)",
+  }}>
+    <div style={{
+      height: "100%", width: `${progress}%`,
+      background: "#e50914",
+    }} />
+  </div>
+)}
       </div>
 
       {/* Watchlist toggle — top right */}
