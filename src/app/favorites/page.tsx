@@ -8,9 +8,9 @@ import { Movie } from "@/types";
 import { getMovieDetails } from "@/lib/tmdb";
 import { getToken, getStoredUser, logout } from "@/lib/auth";
 import { getActiveProfile } from "@/lib/profiles";
-import { fetchWatchlist, removeFromWatchlist } from "@/lib/watchlist";
+import { fetchFavorites, removeFromFavorites } from "@/lib/favorites";
 
-export default function MyListPage() {
+export default function FavoritesPage() {
   const router = useRouter();
 
   const [movies, setMovies] = useState<Movie[]>([]);
@@ -33,46 +33,43 @@ export default function MyListPage() {
 
     setUser(getStoredUser());
 
-    const loadList = async () => {
+    const loadFavorites = async () => {
       try {
-        const watchlistItems = await fetchWatchlist(activeProfile.id);
+        const favoriteItems = await fetchFavorites(activeProfile.id);
 
-        // Watchlist only stores movieId — fetch full details for each from TMDB
         const movieResponses = await Promise.all(
-          watchlistItems.map((item) => getMovieDetails(item.movieId))
+          favoriteItems.map((item) => getMovieDetails(item.movieId))
         );
 
         const fullMovies: Movie[] = movieResponses.map((res) => res.data);
         setMovies(fullMovies);
       } catch (err) {
-        console.error("Failed to load My List:", err);
-        setError("Failed to load your list. Please try again.");
+        console.error("Failed to load favorites:", err);
+        setError("Failed to load your favorites. Please try again.");
       } finally {
         setLoading(false);
       }
     };
 
-    loadList();
+    loadFavorites();
   }, [router]);
 
-  // Removing here means "take it off My List entirely" — so we drop it from local state too,
-  // instead of just toggling a checkmark like on /browse.
   async function handleRemove(movieId: number) {
     const activeProfile = getActiveProfile();
     if (!activeProfile) return;
 
     try {
-      await removeFromWatchlist(movieId, activeProfile.id);
+      await removeFromFavorites(movieId, activeProfile.id);
       setMovies((prev) => prev.filter((m) => m.id !== movieId));
     } catch (err) {
-      console.error("Failed to remove from list:", err);
+      console.error("Failed to remove favorite:", err);
     }
   }
 
   if (loading) {
     return (
       <main style={pageStyle}>
-        <p style={{ color: "#ffffff", fontSize: "18px" }}>Loading your list...</p>
+        <p style={{ color: "#ffffff", fontSize: "18px" }}>Loading your favorites...</p>
       </main>
     );
   }
@@ -88,7 +85,6 @@ export default function MyListPage() {
   return (
     <main style={{ minHeight: "100vh", background: "#141414" }}>
 
-      {/* Navbar — same structure as /browse for consistency */}
       <nav style={{
         display: "flex", alignItems: "center", justifyContent: "space-between",
         padding: "16px 48px",
@@ -104,12 +100,12 @@ export default function MyListPage() {
             </Link>
             <span style={{ color: "#e5e5e5", fontSize: "14px", cursor: "pointer" }}>TV Shows</span>
             <span style={{ color: "#e5e5e5", fontSize: "14px", cursor: "pointer" }}>Movies</span>
-            <Link href="/mylist" style={{ color: "#ffffff", fontWeight: 700, fontSize: "14px", textDecoration: "none" }}>
+            <Link href="/mylist" style={{ color: "#e5e5e5", fontSize: "14px", textDecoration: "none" }}>
               My List
             </Link>
-            <Link href="/favorites" style={{ color: "#e5e5e5", fontSize: "14px", textDecoration: "none" }}>
-  Favorites
-</Link>
+            <Link href="/favorites" style={{ color: "#ffffff", fontWeight: 700, fontSize: "14px", textDecoration: "none" }}>
+              Favorites
+            </Link>
           </div>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
@@ -138,12 +134,12 @@ export default function MyListPage() {
 
       <div style={{ padding: "40px 48px" }}>
         <h1 style={{ color: "#ffffff", fontSize: "28px", fontWeight: 700, marginBottom: "24px" }}>
-          My List
+          Favorites
         </h1>
 
         {movies.length === 0 ? (
           <p style={{ color: "#9ca3af", fontSize: "16px" }}>
-            Your list is empty. Add movies from Browse to see them here.
+            No favorites yet. Tap the ♡ on any movie in Browse to add it here.
           </p>
         ) : (
           <div style={{ display: "flex", flexWrap: "wrap", gap: "16px" }}>
@@ -151,8 +147,8 @@ export default function MyListPage() {
               <MovieCard
                 key={movie.id}
                 movie={movie}
-                isInWatchlist={true}
-                onToggleWatchlist={handleRemove}
+                isFavorite={true}
+                onToggleFavorite={handleRemove}
               />
             ))}
           </div>

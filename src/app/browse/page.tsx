@@ -15,6 +15,7 @@ import {
 import { getToken, getStoredUser, logout } from "@/lib/auth";
 import { getActiveProfile } from "@/lib/profiles";
 import { fetchWatchlist, addToWatchlist, removeFromWatchlist } from "@/lib/watchlist";
+import { fetchFavorites, addToFavorites, removeFromFavorites } from "@/lib/favorites";
 
 interface MovieRow {
   title: string;
@@ -30,6 +31,7 @@ export default function BrowsePage() {
   const [error, setError] = useState("");
   const [user, setUser] = useState<{ name: string; email: string } | null>(null);
   const [watchlistIds, setWatchlistIds] = useState<Set<number>>(new Set());
+  const [favoriteIds, setFavoriteIds] = useState<Set<number>>(new Set());
 
   // Fetch TMDB movie data for the browse rows
   useEffect(() => {
@@ -90,7 +92,13 @@ export default function BrowsePage() {
         setWatchlistIds(ids);
       })
       .catch((err) => console.error("Failed to load watchlist:", err));
-  }, [router]);
+  fetchFavorites(activeProfile.id)
+  .then((items) => {
+    const ids = new Set(items.map((item) => item.movieId));
+    setFavoriteIds(ids);
+  })
+  .catch((err) => console.error("Failed to load favorites:", err));
+    }, [router]);
 
   async function handleToggleWatchlist(movieId: number) {
     const activeProfile = getActiveProfile();
@@ -114,6 +122,28 @@ export default function BrowsePage() {
       console.error("Failed to toggle watchlist:", err);
     }
   }
+  async function handleToggleFavorite(movieId: number) {
+  const activeProfile = getActiveProfile();
+  if (!activeProfile) return;
+
+  const isSaved = favoriteIds.has(movieId);
+
+  try {
+    if (isSaved) {
+      await removeFromFavorites(movieId, activeProfile.id);
+      setFavoriteIds((prev) => {
+        const next = new Set(prev);
+        next.delete(movieId);
+        return next;
+      });
+    } else {
+      await addToFavorites(movieId, activeProfile.id);
+      setFavoriteIds((prev) => new Set(prev).add(movieId));
+    }
+  } catch (err) {
+    console.error("Failed to toggle favorite:", err);
+  }
+}
 
   if (loading) {
     return (
@@ -159,6 +189,9 @@ export default function BrowsePage() {
 <span style={{ color: "#e5e5e5", fontSize: "14px", cursor: "pointer" }}>Movies</span>
 <Link href="/mylist" style={{ color: "#e5e5e5", fontSize: "14px", textDecoration: "none" }}>
   My List
+</Link>
+<Link href="/favorites" style={{ color: "#e5e5e5", fontSize: "14px", textDecoration: "none" }}>
+  Favorites
 </Link>
           </div>
         </div>
@@ -206,12 +239,14 @@ export default function BrowsePage() {
               overflowX: "auto", paddingBottom: "12px"
             }}>
               {row.movies.map((movie) => (
-                <MovieCard
-                  key={movie.id}
-                  movie={movie}
-                  isInWatchlist={watchlistIds.has(movie.id)}
-                  onToggleWatchlist={handleToggleWatchlist}
-                />
+             <MovieCard
+  key={movie.id}
+  movie={movie}
+  isInWatchlist={watchlistIds.has(movie.id)}
+  onToggleWatchlist={handleToggleWatchlist}
+  isFavorite={favoriteIds.has(movie.id)}
+  onToggleFavorite={handleToggleFavorite}
+/>
               ))}
             </div>
           </div>

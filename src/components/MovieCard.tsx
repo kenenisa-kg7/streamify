@@ -10,9 +10,17 @@ interface MovieCardProps {
   movie: Movie;
   isInWatchlist?: boolean;
   onToggleWatchlist?: (movieId: number) => void;
+  isFavorite?: boolean;
+  onToggleFavorite?: (movieId: number) => void;
 }
 
-export default function MovieCard({ movie, isInWatchlist = false, onToggleWatchlist }: MovieCardProps) {
+export default function MovieCard({
+  movie,
+  isInWatchlist = false,
+  onToggleWatchlist,
+  isFavorite = false,
+  onToggleFavorite,
+}: MovieCardProps) {
   const router = useRouter();
   const [hovered, setHovered] = useState(false);
   const [imgError, setImgError] = useState(false);
@@ -51,11 +59,11 @@ export default function MovieCard({ movie, isInWatchlist = false, onToggleWatchl
         />
       </div>
 
-      {/* Watchlist toggle — always visible so users can find it without hovering, but styled subtly */}
+      {/* Watchlist toggle — top right */}
       {onToggleWatchlist && (
         <button
           onClick={(e) => {
-            e.stopPropagation(); // prevents the card's own onClick (navigate to /watch) from firing
+            e.stopPropagation();
             onToggleWatchlist(movie.id);
           }}
           style={{
@@ -78,6 +86,36 @@ export default function MovieCard({ movie, isInWatchlist = false, onToggleWatchl
           title={isInWatchlist ? "Remove from My List" : "Add to My List"}
         >
           {isInWatchlist ? "✓" : "+"}
+        </button>
+      )}
+
+      {/* Favorite toggle — top left */}
+      {onToggleFavorite && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onToggleFavorite(movie.id);
+          }}
+          style={{
+            position: "absolute",
+            top: "8px",
+            left: "8px",
+            width: "28px",
+            height: "28px",
+            borderRadius: "50%",
+            background: "rgba(0,0,0,0.6)",
+            border: "1px solid rgba(255,255,255,0.4)",
+            color: isFavorite ? "#e50914" : "#fff",
+            fontSize: "15px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            cursor: "pointer",
+            zIndex: 2,
+          }}
+          title={isFavorite ? "Remove from Favorites" : "Add to Favorites"}
+        >
+          {isFavorite ? "♥" : "♡"}
         </button>
       )}
 
