@@ -9,6 +9,7 @@ import { getMovieDetails } from "@/lib/tmdb";
 import { getToken, getStoredUser, logout } from "@/lib/auth";
 import { getActiveProfile } from "@/lib/profiles";
 import { fetchFavorites, removeFromFavorites } from "@/lib/favorites";
+import RowSkeleton from "@/components/RowSkeleton";
 
 export default function FavoritesPage() {
   const router = useRouter();
@@ -65,14 +66,13 @@ export default function FavoritesPage() {
       console.error("Failed to remove favorite:", err);
     }
   }
-
-  if (loading) {
-    return (
-      <main style={pageStyle}>
-        <p style={{ color: "#ffffff", fontSize: "18px" }}>Loading your favorites...</p>
-      </main>
-    );
-  }
+if (loading) {
+  return (
+    <main style={{ minHeight: "100vh", background: "#141414", padding: "100px 48px 40px" }}>
+      <RowSkeleton cardCount={10} />
+    </main>
+  );
+}
 
   if (error) {
     return (

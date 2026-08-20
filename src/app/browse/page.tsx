@@ -20,6 +20,7 @@ import { getActiveProfile } from "@/lib/profiles";
 import { fetchWatchlist, addToWatchlist, removeFromWatchlist } from "@/lib/watchlist";
 import { fetchFavorites, addToFavorites, removeFromFavorites } from "@/lib/favorites";
 import { fetchWatchHistory } from "@/lib/watchHistory";
+import RowSkeleton from "@/components/RowSkeleton";
 
 interface MovieRow {
   title: string;
@@ -167,16 +168,24 @@ export default function BrowsePage() {
     }
   }
 
-  if (loading) {
-    return (
-      <main style={{
-        minHeight: "100vh", background: "#141414",
-        display: "flex", alignItems: "center", justifyContent: "center"
-      }}>
-        <p style={{ color: "#ffffff", fontSize: "18px" }}>Loading Streamify...</p>
-      </main>
-    );
-  }
+if (loading) {
+  return (
+    <main style={{ minHeight: "100vh", background: "#141414" }}>
+      {/* Hero placeholder */}
+      <div
+        className="skeleton-pulse"
+        style={{ width: "100%", height: "70vh", background: "#1a1a1a" }}
+      />
+
+      <div style={{ padding: "40px 48px" }}>
+        <RowSkeleton />
+        <RowSkeleton />
+        <RowSkeleton />
+        <RowSkeleton />
+      </div>
+    </main>
+  );
+}
 
   if (error) {
     return (

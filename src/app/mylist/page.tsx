@@ -9,6 +9,7 @@ import { getMovieDetails } from "@/lib/tmdb";
 import { getToken, getStoredUser, logout } from "@/lib/auth";
 import { getActiveProfile } from "@/lib/profiles";
 import { fetchWatchlist, removeFromWatchlist } from "@/lib/watchlist";
+import RowSkeleton from "@/components/RowSkeleton";
 
 export default function MyListPage() {
   const router = useRouter();
@@ -68,14 +69,13 @@ export default function MyListPage() {
       console.error("Failed to remove from list:", err);
     }
   }
-
-  if (loading) {
-    return (
-      <main style={pageStyle}>
-        <p style={{ color: "#ffffff", fontSize: "18px" }}>Loading your list...</p>
-      </main>
-    );
-  }
+if (loading) {
+  return (
+    <main style={{ minHeight: "100vh", background: "#141414", padding: "100px 48px 40px" }}>
+      <RowSkeleton cardCount={10} />
+    </main>
+  );
+}
 
   if (error) {
     return (

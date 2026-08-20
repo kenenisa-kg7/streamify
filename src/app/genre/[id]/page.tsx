@@ -11,7 +11,7 @@ import { getToken, getStoredUser, logout } from "@/lib/auth";
 import { getActiveProfile } from "@/lib/profiles";
 import { fetchWatchlist, addToWatchlist, removeFromWatchlist } from "@/lib/watchlist";
 import { fetchFavorites, addToFavorites, removeFromFavorites } from "@/lib/favorites";
-
+import RowSkeleton from "@/components/RowSkeleton";
 export default function GenrePage() {
   const params = useParams();
   const searchParams = useSearchParams();
@@ -110,13 +110,13 @@ export default function GenrePage() {
     }
   }
 
-  if (loading) {
-    return (
-      <main style={pageStyle}>
-        <p style={{ color: "#ffffff", fontSize: "18px" }}>Loading {genreName}...</p>
-      </main>
-    );
-  }
+ if (loading) {
+  return (
+    <main style={{ minHeight: "100vh", background: "#141414", padding: "100px 48px 40px" }}>
+      <RowSkeleton cardCount={10} />
+    </main>
+  );
+}
 
   if (error) {
     return (
