@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import HeroBanner from "@/components/HeroBanner";
 import MovieCard from "@/components/MovieCard";
+import SearchBar from "@/components/SearchBar";
+import GenreDropdown from "@/components/GenreDropdown";
 import { Movie } from "@/types";
 import {
   getTrendingMovies,
@@ -105,7 +107,6 @@ export default function BrowsePage() {
 
     fetchWatchHistory(activeProfile.id)
       .then(async (items) => {
-        // Only show things that aren't fully finished
         const inProgress = items.filter((item) => item.progress < 100);
 
         const withMovies = await Promise.all(
@@ -207,7 +208,7 @@ export default function BrowsePage() {
               Home
             </Link>
             <span style={{ color: "#e5e5e5", fontSize: "14px", cursor: "pointer" }}>TV Shows</span>
-            <span style={{ color: "#e5e5e5", fontSize: "14px", cursor: "pointer" }}>Movies</span>
+            <GenreDropdown />
             <Link href="/mylist" style={{ color: "#e5e5e5", fontSize: "14px", textDecoration: "none" }}>
               My List
             </Link>
@@ -216,7 +217,9 @@ export default function BrowsePage() {
             </Link>
           </div>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+
+        <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+          <SearchBar />
           {user && (
             <span style={{ color: "#e5e5e5", fontSize: "14px" }}>
               {user.name}
@@ -249,8 +252,8 @@ export default function BrowsePage() {
       <div style={{ padding: "0 48px 64px", marginTop: "-80px", position: "relative", zIndex: 5 }}>
 
         {/* Continue Watching — only shows if there's actually something in progress */}
-       {continueWatching.length > 0 && (
-  <div style={{ marginBottom: "40px", marginTop: "60px" }}>
+        {continueWatching.length > 0 && (
+          <div style={{ marginBottom: "40px", marginTop: "60px" }}>
             <h2 style={{
               color: "#ffffff", fontSize: "20px",
               fontWeight: 700, marginBottom: "12px"
