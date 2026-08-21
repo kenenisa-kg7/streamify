@@ -102,7 +102,9 @@ if (loading) {
             <Link href="/browse" style={{ color: "#e5e5e5", fontSize: "14px", textDecoration: "none" }}>
               Home
             </Link>
-            <span style={{ color: "#e5e5e5", fontSize: "14px", cursor: "pointer" }}>TV Shows</span>
+            <Link href="/tv" style={{ color: "#e5e5e5", fontSize: "14px", textDecoration: "none" }}>
+  TV Shows
+</Link>
             <span style={{ color: "#e5e5e5", fontSize: "14px", cursor: "pointer" }}>Movies</span>
             <Link href="/mylist" style={{ color: "#ffffff", fontWeight: 700, fontSize: "14px", textDecoration: "none" }}>
               My List

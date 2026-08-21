@@ -11,6 +11,9 @@ const tmdb = axios.create({
     language: "en-US",
   },
 });
+export const getTVVideos = (id: number) => tmdb.get(`/tv/${id}/videos`);
+export const getTVCredits = (id: number) => tmdb.get(`/tv/${id}/credits`);
+export const getSimilarTV = (id: number) => tmdb.get(`/tv/${id}/similar`);
 
 // Movies
 export const getTrendingMovies = () => tmdb.get("/trending/movie/week");
